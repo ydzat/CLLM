@@ -21,6 +21,20 @@ def num_blocks(length: int, block_size: int) -> int:
     return (length + block_size * block_size - 1) // (block_size * block_size)
 
 
+def block_linear_indices(length: int, width: int, block_size: int) -> list[int]:
+    """Linear block index ``b = u*C + v`` for each flat token position.
+
+    Matches the ordering produced by ``src.model.pool.to_blocks``: blocks are
+    ordered ``(u, v)`` row-major over the ``H x W`` grid.
+    """
+    c_blocks = width // block_size
+    out = []
+    for i in range(length):
+        r, c = i // width, i % width
+        out.append((r // block_size) * c_blocks + (c // block_size))
+    return out
+
+
 def mask_whole_blocks(
     length: int,
     block_size: int,

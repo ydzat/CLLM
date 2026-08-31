@@ -1,0 +1,13 @@
+Bootstrap: docker
+From: nvcr.io/nvidia/pytorch:26.07-py3
+
+# Build on a CLAIX login node (see docs/development.md):
+#   apptainer build $HPCWORK/cllm.sif scripts/build_image.def
+# Dependencies are baked into the image; code is mounted at runtime via -B,
+# so a code change never requires rebuilding the image.
+
+%post
+    pip install --no-cache-dir pyyaml
+
+%environment
+    export PYTHONUNBUFFERED=1

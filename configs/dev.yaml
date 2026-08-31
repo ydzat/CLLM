@@ -13,4 +13,4 @@ data:
   mask_ratio: 0.15
 training:
   steps: 3
-  lr: 1e-3
+  lr: 0.001
