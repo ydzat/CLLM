@@ -35,13 +35,13 @@ def mask_whole_blocks_batch(
     masked tokens. A block is either fully masked or fully untouched.
     """
     b, n = x.shape
-    blk_idx = torch.tensor(block_linear_indices(n, width, block_size))
+    blk_idx = torch.tensor(block_linear_indices(n, width, block_size), device=x.device)
     m = num_blocks(n, block_size)
     x_masked = x.clone()
-    mask = torch.zeros(b, n, dtype=torch.bool)
+    mask = torch.zeros(b, n, dtype=torch.bool, device=x.device)
     for i in range(b):
         blocks = mask_whole_blocks(n, block_size, mask_ratio, rng)
-        sel = torch.isin(blk_idx, torch.tensor(sorted(blocks)))
+        sel = torch.isin(blk_idx, torch.tensor(sorted(blocks), device=x.device))
         x_masked[i, sel] = mask_id
         mask[i] = sel
     return x_masked, mask
@@ -59,13 +59,17 @@ def main() -> None:
     tcfg = cfg["training"]
 
     torch.manual_seed(0)
-    model = BlockScanReader(mcfg)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"device: {device}")
+    model = BlockScanReader(mcfg).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=tcfg["lr"])
     rng = random.Random(0)
 
     for step in range(tcfg["steps"]):
         # ids >= 3 skip the [PAD]/[MASK]/[UNK] specials
-        x = torch.randint(3, mcfg["vocab_size"], (dcfg["batch_size"], mcfg["seq_len"]))
+        x = torch.randint(
+            3, mcfg["vocab_size"], (dcfg["batch_size"], mcfg["seq_len"]), device=device
+        )
         x_masked, mask = mask_whole_blocks_batch(
             x, mcfg["width"], mcfg["block_size"], dcfg["mask_ratio"], mask_id=1, rng=rng
         )
