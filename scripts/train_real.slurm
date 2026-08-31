@@ -18,6 +18,8 @@ mkdir -p logs
 # Keep HuggingFace cache off HOME (quota) — stream cache lives on HPCWORK.
 export HF_HOME="$HPCWORK/hf-cache"
 export HF_DATASETS_CACHE="$HPCWORK/hf-cache/datasets"
+# Read-only HF token (gated datasets); stored outside git in ~/.hf_token.
+export HF_TOKEN="$(cat ~/.hf_token)"
 
 apptainer exec --nv \
   -B "$HOME/cllm:/code" \

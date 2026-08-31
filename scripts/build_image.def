@@ -7,7 +7,7 @@ From: nvcr.io/nvidia/pytorch:26.07-py3
 # so a code change never requires rebuilding the image.
 
 %post
-    pip install --no-cache-dir pyyaml
+    pip install --no-cache-dir pyyaml datasets
 
 %environment
     export PYTHONUNBUFFERED=1
