@@ -3,7 +3,7 @@
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=24
-#SBATCH --time=04:00:00
+#SBATCH --time=00:15:00
 #SBATCH --job-name=cllm-train
 #SBATCH --output=logs/train_%j.out
 #SBATCH --error=logs/train_%j.err
