@@ -1,0 +1,47 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+
+# --- IDE / editor ---
+.idea/
+.vscode/
+*.swp
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- ML artifacts (large, stored on HPC, never in git) ---
+*.sif
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+checkpoints/
+logs/
+wandb/
+outputs/
+runs/
+
+# --- Data (large, stored on HPC) ---
+data/
+*.arrow
+*.parquet
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+*.ipynb
