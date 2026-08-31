@@ -9,3 +9,4 @@ Each file records one non-trivial design choice in the fixed form **Problem / De
 | [0003](0003-content-based-intra-block-interaction.md) | Content-based intra-block interaction | 块内交互必要，但必须内容型（置换不变），不能用位置型 |
 | [0004](0004-conditional-ffn-moe-routing.md) | Conditional FFN (top-k routing) | FFN 只跑在语义重载的块上，是短上下文里的真·速度杠杆 |
 | [0005](0005-discrete-diffusion-generation.md) | Discrete-diffusion generation | 非自回归迭代掩码填充，O(K) 前向替代 O(N) 步；图生成领域的结论 |
+| [0006](0006-dataset-choice.md) | Pretraining dataset | 中文为主(~65%) + 英文/代码/数学；SkyPile + FineWeb-Edu + Stack + OpenWebMath；追求中文性能而非对照 |
