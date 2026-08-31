@@ -48,6 +48,10 @@ class CharTokenizer:
     def decode(self, ids: list[int]) -> str:
         return "".join(self._i2c.get(i, "[UNK]") for i in ids)
 
+    def to_id(self, char: str) -> int:
+        """Map a single character to its id (unknown chars map to ``[UNK]``)."""
+        return self._c2i.get(char, self.unk_id)
+
     def save(self, path: str) -> None:
         """Persist the char->id map as JSON (creates parent dirs)."""
         import json
