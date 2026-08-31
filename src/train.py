@@ -90,6 +90,7 @@ def main() -> None:
     tcfg = cfg["training"]
 
     torch.manual_seed(0)
+    torch.backends.cuda.matmul.allow_tf32 = True  # ~10x faster on H100
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"device: {device}")
     model = BlockScanReader(mcfg).to(device)
