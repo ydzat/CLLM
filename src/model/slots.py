@@ -1,0 +1,35 @@
+"""Slot attention output: set-to-sequence reconstruction."""
+from __future__ import annotations
+
+import math
+
+import torch
+from torch import nn
+
+
+class SlotAttention(nn.Module):
+    """Learned slots each select one character from a block's token set.
+
+    Each of ``T²`` slots is a learned query that attends to the block's tokens
+    by content and emits a vocabulary distribution, reconstructing the block's
+    characters into an ordered "reasonable combination". The slot assignment is
+    decided by content, not by position.
+    """
+
+    def __init__(self, d: int, n_slots: int, vocab_size: int) -> None:
+        super().__init__()
+        self.slots = nn.Parameter(torch.randn(n_slots, d) * 0.02)
+        self.wk = nn.Linear(d, d, bias=False)
+        self.wv = nn.Linear(d, d, bias=False)
+        self.wo = nn.Linear(d, vocab_size)
+
+    def forward(self, h_blocks: torch.Tensor) -> torch.Tensor:
+        """``(B, M, T², d) -> (B, M, T², vocab)``."""
+        d = h_blocks.shape[-1]
+        k = self.wk(h_blocks)  # (B, M, n_tok, d)
+        v = self.wv(h_blocks)
+        # Slots (s) attend to tokens (t); s and t are both size T² but distinct axes.
+        attn = torch.einsum("sd,bmtd->bmst", self.slots, k) / math.sqrt(d)
+        attn = attn.softmax(dim=-1)  # over tokens (t)
+        out = torch.einsum("bmst,bmtd->bmsd", attn, v)  # (B, M, s, d)
+        return self.wo(out)

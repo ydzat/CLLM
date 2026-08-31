@@ -5,6 +5,7 @@ model:
   heads: 8
   block_size: 4      # T (blocks are T x T chars)
   width: 64          # W (chars per line)
+  seq_len: 1024      # N (must equal H*W with H,W divisible by T)
   vocab_size: 8000
   alpha: 0.5         # FFN routing fraction
 data:
