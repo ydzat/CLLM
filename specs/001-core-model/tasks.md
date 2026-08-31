@@ -5,7 +5,7 @@ Ordered, each atomic and independently verifiable. `[P]` = parallelizable. Read 
 ## Phase 1 — Skeleton and data
 
 - **T1** — Create `src/` package layout, `requirements.txt`, `configs/dev.yaml` (tiny config: `L=1, d=64, batch=2, T=4, W=64`), `tests/` dir. *Accept*: `pytest tests/` collects (even if empty).
-- **T2** `[P]` — Implement char-level tokenizer + vocab (`src/data/tokenizer.py`): char ↔ id mapping, `[MASK]`, `[PAD]`, vocab size 8000. *Accept*: round-trips a sample sentence; unknown chars map to `[PAD]`.
+- **T2** `[P]` — Implement char-level tokenizer + vocab (`src/data/tokenizer.py`): char ↔ id mapping, `[MASK]`, `[PAD]`, `[UNK]`, vocab size 8000. *Accept*: round-trips a sample sentence; unknown chars map to `[UNK]` (never `[PAD]`).
 - **T3** `[P]` — Implement 2D packing + block mask (`src/data/packing.py`): `pack(ids, W) -> (r, c)`, block assignment `b(i)`, whole-block masking. *Accept*: `N=1024, T=4` yields `M=64` blocks; 15% mask covers whole blocks only.
 
 ## Phase 2 — Model

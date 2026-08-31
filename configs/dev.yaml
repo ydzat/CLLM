@@ -1,0 +1,15 @@
+model:
+  d: 64              # hidden dim
+  layers: 1          # L
+  d_ff: 256          # FFN hidden dim
+  heads: 8
+  block_size: 4      # T (blocks are T x T chars)
+  width: 64          # W (chars per line)
+  vocab_size: 8000
+  alpha: 0.5         # FFN routing fraction
+data:
+  batch_size: 2
+  mask_ratio: 0.15
+training:
+  steps: 3
+  lr: 1e-3
