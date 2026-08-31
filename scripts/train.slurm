@@ -9,13 +9,13 @@
 #SBATCH --error=logs/train_%j.err
 
 # Block-scan reader training on one H100 (RWTH CLAIX-2023, Apptainer).
-# Code is synced to $WORK/cllm via git; the image lives at $HPCWORK (docs/development.md).
+# Code lives at $HOME/cllm (git clone); the image lives at $HPCWORK (docs/development.md).
 set -euo pipefail
 
 module purge
 mkdir -p logs
 
 apptainer exec --nv \
-  -B "$WORK/cllm:/code" \
+  -B "$HOME/cllm:/code" \
   "$HPCWORK/cllm.sif" \
   python /code/src/train.py --config /code/configs/dev.yaml
