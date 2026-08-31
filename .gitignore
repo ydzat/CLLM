@@ -31,14 +31,14 @@ Thumbs.db
 *.ckpt
 *.safetensors
 *.bin
-checkpoints/
-logs/
-wandb/
-outputs/
-runs/
+/checkpoints/
+/logs/
+/wandb/
+/outputs/
+/runs/
 
 # --- Data (large, stored on HPC) ---
-data/
+/data/
 *.arrow
 *.parquet
 
