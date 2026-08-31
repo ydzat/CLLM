@@ -18,5 +18,5 @@ Text is laid out as a fixed-width 2D grid (line width `W`), partitioned into `T�
 
 - Position space shrinks from `N` to `N/T²` positions.
 - `T` is the single knob trading order precision against compute efficiency; `T=1` degenerates to per-token 2D.
-- Hypothesis H1 (Chinese tolerates coarser `T` than English at equal quality) is a direct, falsifiable function of `T`.
+- Hypothesis H1 (block-granular position at larger `T` yields equal-or-better Chinese performance than a per-token baseline at the same compute) is a direct, falsifiable function of `T`.
 - Order-only contrasts inside one block (狗追猫 vs 猫追狗) become indistinguishable; the cost grows with `T`.

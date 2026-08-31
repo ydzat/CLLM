@@ -116,7 +116,7 @@ Iterative mask-predict: initialise the grid to `[MASK]`, predict all tokens in o
 
 ## Core tradeoff: block size T
 
-Larger `T` → fewer blocks (`M = N/T²`), more pooling/skip efficiency, and more order loss inside a block (order-only contrasts such as 狗追猫 vs 猫追狗 fall into one block and are resolved by prior, not position). Smaller `T` → the reverse. `T` is the single knob for the central hypothesis H1: Chinese tolerates coarser position than English at equal quality.
+Larger `T` → fewer blocks (`M = N/T²`), more pooling/skip efficiency, and more order loss inside a block (order-only contrasts such as 狗追猫 vs 猫追狗 fall into one block and are resolved by prior, not position). Smaller `T` → the reverse. `T` is the single knob for the central hypothesis H1: block-granular position (larger `T`) yields equal-or-better Chinese performance than a standard per-token transformer at the same compute.
 
 ## Complexity
 
