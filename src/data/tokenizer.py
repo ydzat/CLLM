@@ -47,3 +47,24 @@ class CharTokenizer:
 
     def decode(self, ids: list[int]) -> str:
         return "".join(self._i2c.get(i, "[UNK]") for i in ids)
+
+    def save(self, path: str) -> None:
+        """Persist the char->id map as JSON (creates parent dirs)."""
+        import json
+        from pathlib import Path
+
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(self._c2i, f, ensure_ascii=False)
+
+    @classmethod
+    def load(cls, path: str) -> "CharTokenizer":
+        """Rebuild a tokenizer from a JSON written by :meth:`save`."""
+        import json
+
+        with open(path, encoding="utf-8") as f:
+            c2i = json.load(f)
+        tok = cls()
+        tok._c2i = c2i
+        tok._i2c = {i: c for c, i in c2i.items()}
+        return tok
