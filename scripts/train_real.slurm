@@ -2,8 +2,8 @@
 #SBATCH --partition=c23g
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
-#SBATCH --cpus-per-task=24
-#SBATCH --time=12:00:00
+#SBATCH --cpus-per-task=8
+#SBATCH --time=02:00:00
 #SBATCH --job-name=cllm-train-real
 #SBATCH --output=logs/train_real_%j.out
 #SBATCH --error=logs/train_real_%j.err
