@@ -15,9 +15,10 @@ set -euo pipefail
 module purge
 mkdir -p logs
 
-# Keep HuggingFace cache off HOME (quota) — stream cache lives on HPCWORK.
-export HF_HOME="$HPCWORK/hf-cache"
-export HF_DATASETS_CACHE="$HPCWORK/hf-cache/datasets"
+# HF cache must live on the /data bind-mount ($HPCWORK → /data inside the
+# container), NOT the host path $HPCWORK — that is read-only inside Apptainer.
+export HF_HOME="/data/hf-cache"
+export HF_DATASETS_CACHE="/data/hf-cache/datasets"
 # Read-only HF token (gated datasets); stored outside git in ~/.hf_token.
 export HF_TOKEN="$(cat ~/.hf_token)"
 
