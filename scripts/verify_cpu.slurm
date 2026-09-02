@@ -2,6 +2,7 @@
 #SBATCH --partition=devel
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=8
+#SBATCH --mem=32G
 #SBATCH --time=00:15:00
 #SBATCH --job-name=cllm-verify-cpu
 #SBATCH --output=logs/verify_cpu_%j.out
