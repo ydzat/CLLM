@@ -57,7 +57,7 @@ h_i^(0) = Embed(x_i) + P[u_i, v_i],   P ∈ R^{R×C×d}  (learnable)
 
 ## Layer
 
-Each of `L` layers runs five steps. Steps (a)–(d) are the cheap "scan" (unconditional); step (e) is the expensive "read" (conditional).
+Each of `L` layers runs five steps. Steps (a)–(d) are the cheap "scan" (unconditional); step (e) is the expensive "read" (conditional). Every sublayer is pre-normed with LayerNorm (LN) so the sum-pool over `T²` tokens cannot compound across layers; without it the hidden state grows ~`T²` per layer and the loss diverges (measured at `d=512, L=12`).
 
 **(a) Pool (coarse scan, DeepSets)**
 
@@ -69,7 +69,7 @@ z_b = MLP_pool( Σ_{i∈b} h_i^(ℓ−1) )  ∈ R^d
 
 ```
 S(b) = { b' : max(|u−u'|,|v−v'|) ≤ 1 } ∪ { b' : v'=v, u'−u ∈ {±2,±3,±4} } ∪ { b' : u'=u, v'−v ∈ {±2,±3} }
-z_b ← z_b + Attn( z_b ; { z_{b'} : b' ∈ S(b) } )
+z_b ← z_b + Attn( LN(z_b) ; { z_{b'} : b' ∈ S(b) } )
 ```
 
 The three terms are the 3×3 neighbourhood, vertical skip, and horizontal skip. `|S| ≈ 19`. When `M` is small (≤ a few hundred) this is computed as dense attention over all blocks; the mask is an ablation knob.
@@ -77,20 +77,20 @@ The three terms are the 3×3 neighbourhood, vertical skip, and horizontal skip. 
 **(c) Broadcast**
 
 ```
-h_i^(ℓ) = h_i^(ℓ−1) + z_{b(i)}
+h_i^(ℓ) = LN( h_i^(ℓ−1) + z_{b(i)} )
 ```
 
 **(d) Router**
 
 ```
-s_b = W_r z_b ∈ R,   K = top-k_b { s_b }
+s_b = W_r LN(z_b) ∈ R,   K = top-k_b { s_b }
 ```
 
 **(e) Conditional read (only b ∈ K, fraction α = k/M)**
 
 ```
-h_i^(ℓ) ← h_i^(ℓ) + SetAttn( h_i^(ℓ) ; { h_j^(ℓ) : j ∈ b } )   // content attention, no positional bias
-h_i^(ℓ) ← h_i^(ℓ) + FFN( h_i^(ℓ) )
+h_i^(ℓ) ← h_i^(ℓ) + SetAttn( LN(h_i^(ℓ)) ; { h_j^(ℓ) : j ∈ b } )   // content attention, no positional bias
+h_i^(ℓ) ← h_i^(ℓ) + FFN( LN(h_i^(ℓ)) )
 ```
 
 Skipped blocks are only broadcast-updated; they never run the FFN. See [0003](decisions/0003-content-based-intra-block-interaction.md) and [0004](decisions/0004-conditional-ffn-moe-routing.md).

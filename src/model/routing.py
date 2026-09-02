@@ -19,8 +19,11 @@ class ConditionalRead(nn.Module):
 
     def __init__(self, d: int, d_ff: int, n_heads: int, alpha: float) -> None:
         super().__init__()
+        self.norm_router = nn.LayerNorm(d)
         self.router = nn.Linear(d, 1, bias=False)
+        self.norm_attn = nn.LayerNorm(d)
         self.set_attn = SetAttention(d, n_heads)
+        self.norm_ffn = nn.LayerNorm(d)
         self.ffn = nn.Sequential(nn.Linear(d, d_ff), nn.GELU(), nn.Linear(d_ff, d))
         self.alpha = alpha
 
@@ -29,16 +32,16 @@ class ConditionalRead(nn.Module):
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Return ``(h_blocks_out, mask)``; ``mask`` is ``(B, M)`` with ``round(alpha*M)`` ones."""
         b, m = z.shape[0], z.shape[1]
-        logits = self.router(z).squeeze(-1)  # (B, M)
+        logits = self.router(self.norm_router(z)).squeeze(-1)  # (B, M)
         probs = logits.softmax(dim=1)  # (B, M)
         k = max(1, round(self.alpha * m))
         _, topk_idx = probs.topk(k, dim=1)
         mask = torch.zeros(b, m, device=z.device).scatter(1, topk_idx, 1.0)
 
         h_sel = h_blocks[mask.bool()]  # (S, T², d), S = B*k
-        h_sel = h_sel + self.set_attn(h_sel)
+        h_sel = h_sel + self.set_attn(self.norm_attn(h_sel))
         gate = probs[mask.bool()].unsqueeze(-1).unsqueeze(-1)  # (S, 1, 1)
-        h_sel = h_sel + gate * self.ffn(h_sel)
+        h_sel = h_sel + gate * self.ffn(self.norm_ffn(h_sel))
 
         out = h_blocks.clone()
         out[mask.bool()] = h_sel

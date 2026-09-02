@@ -78,6 +78,7 @@ def main() -> None:
     parser.add_argument("--vocab", default=None, help="path to vocab JSON (required with --data)")
     parser.add_argument("--text-field", default="text")
     parser.add_argument("--max-chars", type=int, default=None)
+    parser.add_argument("--steps", type=int, default=None, help="override training.steps from config")
     args = parser.parse_args()
 
     if args.data and not args.vocab:
@@ -88,6 +89,8 @@ def main() -> None:
     mcfg = cfg["model"]
     dcfg = cfg["data"]
     tcfg = cfg["training"]
+    if args.steps is not None:
+        tcfg["steps"] = args.steps
 
     torch.manual_seed(0)
     torch.backends.cuda.matmul.allow_tf32 = True  # ~10x faster on H100
