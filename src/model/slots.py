@@ -19,6 +19,7 @@ class SlotAttention(nn.Module):
     def __init__(self, d: int, n_slots: int, vocab_size: int) -> None:
         super().__init__()
         self.slots = nn.Parameter(torch.randn(n_slots, d) * 0.02)
+        self.slot_bias = nn.Parameter(torch.zeros(n_slots, vocab_size))  # per-slot positional prior
         self.wk = nn.Linear(d, d, bias=False)
         self.wv = nn.Linear(d, d, bias=False)
         self.wo = nn.Linear(d, vocab_size)
@@ -32,4 +33,7 @@ class SlotAttention(nn.Module):
         attn = torch.einsum("sd,bmtd->bmst", self.slots, k) / math.sqrt(d)
         attn = attn.softmax(dim=-1)  # over tokens (t)
         out = torch.einsum("bmst,bmtd->bmsd", attn, v)  # (B, M, s, d)
-        return self.wo(out)
+        # Add the slot's own positional prior so a fully-masked block (uniform
+        # content) still yields T² distinct outputs: slot j predicts the char at
+        # position j, refined by content when the block is unmasked.
+        return self.wo(out) + self.slot_bias.unsqueeze(0).unsqueeze(0)

@@ -13,3 +13,4 @@ Each file records one non-trivial design choice in the fixed form **Problem / De
 | [0007](0007-data-pipeline.md) | Data pipeline | HPC 流式读取(streaming=True，不落盘)；本机零下载用内置样例；词表一次性构建 |
 | [0008](0008-pre-norm-layernorm.md) | Pre-norm LayerNorm | sum-pool 每层放大 T²，无归一化会指数爆炸；每子层加 pre-norm LN |
 | [0009](0009-variable-mask-ratio.md) | Variable mask ratio | 固定 15% 掩码无法生成（100% 掩码 OOD 坍缩到逗号）；改为每 batch 采样 r~U(0,1) |
+| [0010](0010-per-slot-positional-output.md) | Per-slot positional output + gated attention | 丢块内位置→掩码块 16 token 同构→slot 只能输出 1 字符→卡 unigram 熵；加 per-slot 输出偏置 + Qwen 门控 |

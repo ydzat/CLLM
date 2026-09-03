@@ -104,7 +104,7 @@ a_{j,i} = softmax_i( q_jᵀ W_k h_i / √d )
 logit_{b,j} = W_o Σ_i a_{j,i} W_v h_i
 ```
 
-Slots are the "reasonable combination" positions; which character fills a slot is decided by content, not by position.
+Slots are the "reasonable combination" positions. Each slot carries a learned positional prior (`slot_bias`), refined by content attention: an unmasked block is reordered by content, a fully-masked block is reconstructed positionally (see [0010](decisions/0010-per-slot-positional-output.md)).
 
 ## Training: block MLM (variable mask ratio)
 
