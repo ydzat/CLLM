@@ -32,4 +32,6 @@ apptainer exec \
     --data Skywork/SkyPile-150B \
     --vocab /data/vocab.json \
     --text-field text \
-    --steps 1
+    --steps 1 \
+    --save-dir /data/checkpoints \
+    --save-interval 1

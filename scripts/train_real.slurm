@@ -30,4 +30,6 @@ apptainer exec --nv \
     --config /code/configs/train.yaml \
     --data Skywork/SkyPile-150B \
     --vocab /data/vocab.json \
-    --text-field text
+    --text-field text \
+    --save-dir /data/checkpoints \
+    --save-interval 1000
