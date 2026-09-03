@@ -22,4 +22,4 @@ apptainer exec \
     --checkpoint /data/checkpoints/final.pt \
     --vocab /data/vocab.json \
     --num-samples 3 \
-    --rounds 16
+    --rounds 64
