@@ -10,7 +10,7 @@ model:
   alpha: 0.5         # FFN routing fraction
 data:
   batch_size: 2
-  mask_ratio: 0.15
+  # mask ratio sampled per batch ~ U(0,1) (variable-mask diffusion)
 training:
   steps: 3
   lr: 0.001

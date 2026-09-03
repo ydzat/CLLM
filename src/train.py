@@ -144,8 +144,9 @@ def main() -> None:
         if step >= tcfg["steps"]:
             break
         x = x.to(device)
+        mask_ratio = rng.random()  # sample r ~ U(0,1) per batch (LLaDA-style diffusion)
         x_masked, mask = mask_whole_blocks_batch(
-            x, mcfg["width"], mcfg["block_size"], dcfg["mask_ratio"], mask_id=1, rng=rng
+            x, mcfg["width"], mcfg["block_size"], mask_ratio, mask_id=1, rng=rng
         )
         logits = model(x_masked)  # (B, N, V)
         loss = F.cross_entropy(logits[mask], x[mask])  # masked positions only

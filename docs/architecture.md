@@ -106,9 +106,9 @@ logit_{b,j} = W_o Σ_i a_{j,i} W_v h_i
 
 Slots are the "reasonable combination" positions; which character fills a slot is decided by content, not by position.
 
-## Training: block MLM
+## Training: block MLM (variable mask ratio)
 
-Mask a random 15% of whole blocks; predict each masked block's characters at its slots. Loss is cross-entropy over masked blocks. Whole-block masking forces reconstruction of an entire block from its coarse position and neighbour context.
+Mask a random fraction `r ~ U(0,1)` of whole blocks; predict each masked block's characters at its slots. Loss is cross-entropy over masked blocks. Sampling `r` over the full `[0,1]` range each batch (LLaDA-style) is what lets generation start from an all-`[MASK]` grid — a model trained at a single fixed ratio (e.g. 15%) never sees 100% masking and collapses to the most frequent token when generating. See [0009](decisions/0009-variable-mask-ratio.md).
 
 ## Generation: discrete diffusion
 

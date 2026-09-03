@@ -10,7 +10,7 @@ model:
   alpha: 0.5         # FFN routing fraction
 data:
   batch_size: 32
-  mask_ratio: 0.15
+  # mask ratio is sampled per batch ~ U(0,1), LLaDA-style (see decision 0009)
 training:
   steps: 30000       # ~1B tokens at batch 32 x seq 1024
   lr: 0.0003
