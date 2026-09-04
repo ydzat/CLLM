@@ -33,7 +33,7 @@ class ConditionalRead(nn.Module):
         """Return ``(h_blocks_out, mask)``; ``mask`` is ``(B, M)`` with ``round(alpha*M)`` ones."""
         b, m = z.shape[0], z.shape[1]
         logits = self.router(self.norm_router(z)).squeeze(-1)  # (B, M)
-        probs = logits.softmax(dim=1)  # (B, M)
+        probs = logits.sigmoid()  # per-block gate in (0,1), NOT softmax over blocks (that shrinks to ~1/M)
         k = max(1, round(self.alpha * m))
         _, topk_idx = probs.topk(k, dim=1)
         mask = torch.zeros(b, m, device=z.device).scatter(1, topk_idx, 1.0)
