@@ -28,6 +28,7 @@ class BlockScanReader(nn.Module):
 
         self.embed = nn.Embedding(cfg["vocab_size"], d)
         self.position = SparsePosition(h // t, w // t, d)
+        self.intra = nn.Parameter(torch.randn(t * t, d) * 0.02)  # (T², d) intra-block position
         self.layers = nn.ModuleList(
             BlockScanLayer(d, cfg["d_ff"], cfg["heads"], cfg["alpha"])
             for _ in range(cfg["layers"])
@@ -44,6 +45,7 @@ class BlockScanReader(nn.Module):
         h = h + self.position(self.t).unsqueeze(0)
         hb = to_blocks(h, self.t)  # (B, M, T², d)
         for layer in self.layers:
+            hb = hb + self.intra  # re-inject intra-block position each layer (survives sum-pool)
             hb, _ = layer(hb)
         logits = self.slots(hb)  # (B, M, T², vocab)
         return from_blocks(logits, self.h, self.w, self.t).view(b, -1, logits.shape[-1])
