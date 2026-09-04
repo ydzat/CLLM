@@ -26,5 +26,5 @@ apptainer exec \
     --data Skywork/SkyPile-150B \
     --vocab /data/bpe_tokenizer.json \
     --text-field text \
-    --steps 400 \
+    --steps 2000 \
     --mask-ratio 0.15
