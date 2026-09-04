@@ -1,4 +1,4 @@
-"""Training loop: block-level masked language modeling.
+"""Training loop: token-level masked language modeling (BERT/LLaDA style).
 
 The CPU smoke test uses random data; real corpus data arrives via the HPC data
 pipeline (see docs/development.md).
@@ -47,6 +47,30 @@ def mask_whole_blocks_batch(
         sel = torch.isin(blk_idx, torch.tensor(sorted(blocks), device=x.device))
         x_masked[i, sel] = mask_id
         mask[i] = sel
+    return x_masked, mask
+
+
+def mask_tokens(
+    x: torch.Tensor,
+    mask_ratio: float,
+    mask_id: int,
+    rng: random.Random,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Mask a random ``mask_ratio`` fraction of individual tokens.
+
+    Unlike whole-block masking, each token is masked independently, so a block
+    keeps most of its content and the slot output reconstructs masked tokens
+    from their in-block neighbours (rearrangement, not full generation).
+    Returns ``(x_masked, mask)`` with ``mask`` ``(B, N)`` bool.
+    """
+    b, n = x.shape
+    x_masked = x.clone()
+    mask = torch.zeros(b, n, dtype=torch.bool, device=x.device)
+    k = max(1, round(n * mask_ratio))
+    for i in range(b):
+        idx = torch.tensor(rng.sample(range(n), k), device=x.device)
+        x_masked[i, idx] = mask_id
+        mask[i, idx] = True
     return x_masked, mask
 
 
@@ -145,9 +169,7 @@ def main() -> None:
             break
         x = x.to(device)
         mask_ratio = rng.random()  # sample r ~ U(0,1) per batch (LLaDA-style diffusion)
-        x_masked, mask = mask_whole_blocks_batch(
-            x, mcfg["width"], mcfg["block_size"], mask_ratio, mask_id=1, rng=rng
-        )
+        x_masked, mask = mask_tokens(x, mask_ratio, mask_id=1, rng=rng)
         logits = model(x_masked)  # (B, N, V)
         loss = F.cross_entropy(logits[mask], x[mask])  # masked positions only
         opt.zero_grad()
