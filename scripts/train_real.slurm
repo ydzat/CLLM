@@ -29,7 +29,7 @@ apptainer exec --nv \
   python /code/src/train.py \
     --config /code/configs/train.yaml \
     --data Skywork/SkyPile-150B \
-    --vocab /data/vocab.json \
+    --vocab /data/bpe_tokenizer.json \
     --text-field text \
     --save-dir /data/checkpoints \
     --save-interval 1000 \

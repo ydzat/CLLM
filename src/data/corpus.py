@@ -38,3 +38,27 @@ def iter_text_hf(
             total += 1
             if max_chars is not None and total >= max_chars:
                 return
+
+
+def iter_bpe_ids(
+    tok,
+    dataset_name: str,
+    split: str = "train",
+    text_field: str = "text",
+    max_chars: int | None = None,
+) -> Iterator[int]:
+    """Yield BPE token ids streamed from a HuggingFace dataset.
+
+    Each example's text is encoded to subword ids with ``tok`` and the ids are
+    yielded in order. ``max_chars`` caps the stream by source-char count.
+    """
+    from datasets import load_dataset
+
+    ds = load_dataset(dataset_name, split=split, streaming=True)
+    total = 0
+    for example in ds:
+        text = example[text_field]
+        yield from tok.encode(text)
+        total += len(text)
+        if max_chars is not None and total >= max_chars:
+            return

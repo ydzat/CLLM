@@ -6,7 +6,7 @@ model:
   block_size: 4
   width: 64
   seq_len: 1024
-  vocab_size: 8000
+  vocab_size: 30000
   alpha: 0.5
 data:
   batch_size: 8

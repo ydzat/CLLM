@@ -24,7 +24,7 @@ apptainer exec \
   python /code/src/train.py \
     --config /code/configs/verify_med.yaml \
     --data Skywork/SkyPile-150B \
-    --vocab /data/vocab.json \
+    --vocab /data/bpe_tokenizer.json \
     --text-field text \
     --steps 400 \
     --mask-ratio 0.15

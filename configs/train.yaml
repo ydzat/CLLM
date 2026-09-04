@@ -6,7 +6,7 @@ model:
   block_size: 4      # T (blocks are T x T chars)
   width: 64          # W (chars per line)
   seq_len: 1024
-  vocab_size: 8000
+  vocab_size: 30000
   alpha: 0.5         # FFN routing fraction
 data:
   batch_size: 32

@@ -30,7 +30,7 @@ apptainer exec \
   python /code/src/train.py \
     --config /code/configs/train.yaml \
     --data Skywork/SkyPile-150B \
-    --vocab /data/vocab.json \
+    --vocab /data/bpe_tokenizer.json \
     --text-field text \
     --steps 1 \
     --save-dir /data/checkpoints \

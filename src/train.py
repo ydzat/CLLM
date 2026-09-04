@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.data.dataloader import batchify
 from src.data.packing import block_linear_indices, mask_whole_blocks, num_blocks
-from src.data.tokenizer import CharTokenizer
+from src.data.tokenizer import BpeTokenizer
 from src.model.model import BlockScanReader
 
 
@@ -82,15 +82,14 @@ def make_batches(args, mcfg, dcfg):
     Without ``--data``: infinite random batches for the smoke test.
     """
     if args.data:
-        from src.data.corpus import iter_text_hf
+        from src.data.corpus import iter_bpe_ids
 
-        tok = CharTokenizer.load(args.vocab)
+        tok = BpeTokenizer.load(args.vocab)
 
-        def char_ids():
-            for ch in iter_text_hf(args.data, "train", args.text_field, args.max_chars):
-                yield tok.to_id(ch)
+        def token_ids():
+            yield from iter_bpe_ids(tok, args.data, "train", args.text_field, args.max_chars)
 
-        yield from batchify(char_ids(), dcfg["batch_size"], mcfg["seq_len"], tok.pad_id)
+        yield from batchify(token_ids(), dcfg["batch_size"], mcfg["seq_len"], tok.pad_id)
     else:
         while True:
             yield torch.randint(3, mcfg["vocab_size"], (dcfg["batch_size"], mcfg["seq_len"]))

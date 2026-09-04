@@ -72,3 +72,42 @@ class CharTokenizer:
         tok._c2i = c2i
         tok._i2c = {i: c for c, i in c2i.items()}
         return tok
+
+
+class BpeTokenizer:
+    """Subword (BPE) tokenizer wrapping a `tokenizers` BPE model.
+
+    Special ids are the fixed [PAD]=0, [MASK]=1, [UNK]=2 (assigned in that
+    order by `build_bpe.py`); regular subword tokens start at 3.
+    """
+
+    def __init__(self, tokenizer) -> None:
+        self._tok = tokenizer  # tokenizers.Tokenizer
+
+    @property
+    def pad_id(self) -> int:
+        return self._tok.token_to_id("[PAD]")
+
+    @property
+    def mask_id(self) -> int:
+        return self._tok.token_to_id("[MASK]")
+
+    @property
+    def unk_id(self) -> int:
+        return self._tok.token_to_id("[UNK]")
+
+    @property
+    def vocab_size(self) -> int:
+        return self._tok.get_vocab_size()
+
+    def encode(self, text: str) -> list[int]:
+        return self._tok.encode(text).ids
+
+    def decode(self, ids: list[int]) -> str:
+        return self._tok.decode(ids)
+
+    @classmethod
+    def load(cls, path: str) -> "BpeTokenizer":
+        from tokenizers import Tokenizer
+
+        return cls(Tokenizer.from_file(path))
