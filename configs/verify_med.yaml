@@ -12,4 +12,5 @@ data:
   batch_size: 8
 training:
   steps: 400
-  lr: 0.001
+  lr: 0.003
+  min_lr: 0.003    # constant LR (cosine flat) — test if higher LR escapes unigram
