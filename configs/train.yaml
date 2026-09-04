@@ -14,5 +14,5 @@ data:
 training:
   steps: 30000       # ~1B tokens at batch 32 x seq 1024
   lr: 0.0003
-  min_lr: 0.00003    # cosine floor = 0.1 x lr
+  min_lr: 0.0003     # constant LR (cosine floor = lr) — decay to 3e-5 killed bigram learning
   warmup_steps: 2000
