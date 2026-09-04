@@ -22,7 +22,10 @@ class SlotAttention(nn.Module):
         self.slot_bias = nn.Parameter(torch.zeros(n_slots, vocab_size))  # per-slot positional prior
         self.wk = nn.Linear(d, d, bias=False)
         self.wv = nn.Linear(d, d, bias=False)
-        self.wo = nn.Linear(d, vocab_size)
+        # Non-linear head: a single linear `wo` would constrain the output to a
+        # convex combination of the present tokens' logits (copy-only). The GELU
+        # breaks that, letting the model GENERATE a char not present in the block.
+        self.head = nn.Sequential(nn.Linear(d, d), nn.GELU(), nn.Linear(d, vocab_size))
 
     def forward(self, h_blocks: torch.Tensor) -> torch.Tensor:
         """``(B, M, T², d) -> (B, M, T², vocab)``."""
@@ -36,4 +39,4 @@ class SlotAttention(nn.Module):
         # Add the slot's own positional prior so a fully-masked block (uniform
         # content) still yields T² distinct outputs: slot j predicts the char at
         # position j, refined by content when the block is unmasked.
-        return self.wo(out) + self.slot_bias.unsqueeze(0).unsqueeze(0)
+        return self.head(out) + self.slot_bias.unsqueeze(0).unsqueeze(0)
