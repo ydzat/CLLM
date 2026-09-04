@@ -1,0 +1,15 @@
+model:
+  d: 128
+  layers: 2
+  d_ff: 512
+  heads: 8
+  block_size: 4
+  width: 64
+  seq_len: 1024
+  vocab_size: 8000
+  alpha: 0.5
+data:
+  batch_size: 8
+training:
+  steps: 400
+  lr: 0.001
