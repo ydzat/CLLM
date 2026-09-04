@@ -18,7 +18,7 @@ class SlotAttention(nn.Module):
 
     def __init__(self, d: int, n_slots: int, vocab_size: int) -> None:
         super().__init__()
-        self.slots = nn.Parameter(torch.randn(n_slots, d) * 0.02)
+        self.slots = nn.Parameter(torch.randn(n_slots, d))  # scale 1.0: match key scale, else attention ~uniform
         self.slot_bias = nn.Parameter(torch.zeros(n_slots, vocab_size))  # per-slot positional prior
         self.wk = nn.Linear(d, d, bias=False)
         self.wv = nn.Linear(d, d, bias=False)
