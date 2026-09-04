@@ -158,7 +158,9 @@ def main() -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"device: {device}")
     model = BlockScanReader(mcfg).to(device)
-    opt = torch.optim.AdamW(model.parameters(), lr=tcfg["lr"])
+    opt = torch.optim.AdamW(
+        model.parameters(), lr=tcfg["lr"], betas=(0.9, 0.95), weight_decay=0.1
+    )  # LLaDA/GPT-3 recipe: beta2=0.95, wd=0.1
     sched = build_scheduler(opt, tcfg)
     rng = random.Random(0)
 
@@ -175,6 +177,7 @@ def main() -> None:
         loss = F.cross_entropy(logits[mask], x[mask])  # masked positions only
         opt.zero_grad()
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         opt.step()
         sched.step()
         print(f"step {step}: loss {loss.item():.4f} lr {sched.get_last_lr()[0]:.2e}")

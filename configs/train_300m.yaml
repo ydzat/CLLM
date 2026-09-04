@@ -1,0 +1,18 @@
+model:
+  d: 768             # ~300M params (0.3B) — scaled from 60M (d=512/L=12)
+  layers: 24         # L
+  d_ff: 3072
+  heads: 12
+  block_size: 4      # T
+  width: 64          # W
+  seq_len: 1024
+  vocab_size: 8000
+  alpha: 0.5         # FFN routing fraction
+data:
+  batch_size: 32
+  # mask ratio sampled per batch ~ U(0,1) (LLaDA-style, decision 0009)
+training:
+  steps: 100000      # ~3.3B tokens at batch 32 x seq 1024 (~55% of Chinchilla for 300M)
+  lr: 0.0003
+  min_lr: 0.00003    # cosine floor = 0.1 x lr
+  warmup_steps: 2000
