@@ -139,6 +139,7 @@ def main() -> None:
     parser.add_argument("--steps", type=int, default=None, help="override training.steps from config")
     parser.add_argument("--save-dir", default="checkpoints", help="where to write checkpoints")
     parser.add_argument("--save-interval", type=int, default=1000, help="save every N steps")
+    parser.add_argument("--mask-ratio", type=float, default=None, help="fixed mask ratio (omit for U(0,1) sampling)")
     args = parser.parse_args()
 
     if args.data and not args.vocab:
@@ -168,7 +169,7 @@ def main() -> None:
         if step >= tcfg["steps"]:
             break
         x = x.to(device)
-        mask_ratio = rng.random()  # sample r ~ U(0,1) per batch (LLaDA-style diffusion)
+        mask_ratio = args.mask_ratio if args.mask_ratio is not None else rng.random()
         x_masked, mask = mask_tokens(x, mask_ratio, mask_id=1, rng=rng)
         logits = model(x_masked)  # (B, N, V)
         loss = F.cross_entropy(logits[mask], x[mask])  # masked positions only

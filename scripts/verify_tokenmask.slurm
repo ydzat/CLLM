@@ -27,4 +27,5 @@ apptainer exec \
     --data Skywork/SkyPile-150B \
     --vocab /data/vocab.json \
     --text-field text \
-    --steps 500
+    --steps 300 \
+    --mask-ratio 0.15
