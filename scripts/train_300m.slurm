@@ -27,4 +27,5 @@ apptainer exec --nv \
     --vocab /data/bpe_tokenizer.json \
     --text-field text \
     --save-dir /data/checkpoints \
-    --save-interval 5000
+    --save-interval 5000 \
+    --mask-ratio 0.15
