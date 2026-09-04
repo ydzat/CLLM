@@ -12,8 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from tokenizers import Regex, Tokenizer, decoders, models, trainers
-from tokenizers.pre_tokenizers import Split
+from tokenizers import Tokenizer, decoders, models, pre_tokenizers, trainers
 
 
 def main() -> None:
@@ -25,10 +24,11 @@ def main() -> None:
     args = parser.parse_args()
 
     tokenizer = Tokenizer(models.BPE(unk_token="[UNK]"))
-    # Split into individual characters so BPE merges frequent char sequences.
-    # Chinese has no whitespace; an empty-regex "isolated" split yields one
-    # "word" per character, which is the correct CJK pre-tokenizer.
-    tokenizer.pre_tokenizer = Split(Regex(""), "isolated")
+    # Whitespace pre-tokenizer: Chinese has no spaces between words, so a
+    # "word" is a whole run of characters, and BPE merges frequent adjacent
+    # char pairs within it. (A per-char "isolated" split would give one-token
+    # words and prevent any merge.)
+    tokenizer.pre_tokenizer = pre_tokenizers.Whitespace()
     tokenizer.decoder = decoders.BPEDecoder()
 
     trainer = trainers.BpeTrainer(
