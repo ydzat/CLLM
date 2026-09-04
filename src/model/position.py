@@ -15,7 +15,7 @@ class SparsePosition(nn.Module):
 
     def __init__(self, r: int, c: int, d: int) -> None:
         super().__init__()
-        self.P = nn.Parameter(torch.randn(r, c, d) * 0.02)
+        self.P = nn.Parameter(torch.randn(r, c, d))  # scale 1.0, comparable to char embeddings
 
     @property
     def num_positions(self) -> int:

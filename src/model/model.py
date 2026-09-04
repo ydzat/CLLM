@@ -28,7 +28,7 @@ class BlockScanReader(nn.Module):
 
         self.embed = nn.Embedding(cfg["vocab_size"], d)
         self.position = SparsePosition(h // t, w // t, d)
-        self.intra = nn.Parameter(torch.randn(t * t, d) * 0.02)  # (T², d) intra-block position
+        self.intra = nn.Parameter(torch.randn(t * t, d))  # (T², d) intra-block position, scale 1.0
         self.layers = nn.ModuleList(
             BlockScanLayer(d, cfg["d_ff"], cfg["heads"], cfg["alpha"])
             for _ in range(cfg["layers"])
