@@ -32,4 +32,5 @@ apptainer exec --nv \
     --vocab /data/vocab.json \
     --text-field text \
     --save-dir /data/checkpoints \
-    --save-interval 1000
+    --save-interval 1000 \
+    --mask-ratio 0.15
