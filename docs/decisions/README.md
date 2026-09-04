@@ -16,3 +16,4 @@ Each file records one non-trivial design choice in the fixed form **Problem / De
 | [0010](0010-per-slot-positional-output.md) | Per-slot positional output + gated attention | 丢块内位置→掩码块 16 token 同构→slot 只能输出 1 字符→卡 unigram 熵；加 per-slot 输出偏置 + Qwen 门控 |
 | [0011](0011-defer-qwen-hybrid-layering.md) | Defer Qwen hybrid layering | 块注意力已 O(M)=O(64)，线性注意力解决的是我们不存在的 O(N²)；小规模下线性注意力更差，留待长上下文 |
 | [0012](0012-test-time-compute-deferred.md) | Test-time compute = K rounds | CoT 套不上非自回归；K 轮迭代即"思考开关"；自适应 K + 多样本投票留待生成验证后 |
+| [0013](0013-unigram-plateau-capacity-limit.md) | Unigram plateau = capacity limit | loss 卡 6.6=unigram 熵是 60M 字符级模型+1B tokens 学不动 60M 条目 bigram 表（~16 样本/条目），非 bug；需扩规模 200-500M+10-100B |
