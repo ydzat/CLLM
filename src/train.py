@@ -13,7 +13,7 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 import yaml
-from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
+from torch.optim.lr_scheduler import ConstantLR, LinearLR, SequentialLR
 
 # Allow `python src/train.py` (run from the repo root) to import the `src` package.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -96,15 +96,29 @@ def make_batches(args, mcfg, dcfg):
 
 
 def build_scheduler(opt: torch.optim.Optimizer, tcfg: dict):
-    """Linear warmup then cosine decay to ``min_lr`` (LLaMA/GPT-3 recipe)."""
+    """Warmup -> Stable (hold at lr) -> Decay, i.e. the WSD schedule.
+
+    The long stable phase keeps the LR high so the model can escape the
+    unigram local minimum (a phase transition — see docs/decisions/0013); the
+    LR decays only in the final ``decay_steps``. A cosine schedule decays the
+    LR continuously and kills it before the escape point, which is what
+    previously left the model stuck at the unigram entropy.
+    """
     steps = tcfg["steps"]
-    warmup_steps = tcfg.get("warmup_steps", 0)
-    min_lr = tcfg.get("min_lr", tcfg["lr"] * 0.1)
-    if warmup_steps > 0:
-        warmup = LinearLR(opt, start_factor=1 / warmup_steps, total_iters=warmup_steps)
-        cosine = CosineAnnealingLR(opt, T_max=max(1, steps - warmup_steps), eta_min=min_lr)
-        return SequentialLR(opt, schedulers=[warmup, cosine], milestones=[warmup_steps])
-    return CosineAnnealingLR(opt, T_max=steps, eta_min=min_lr)
+    warmup_steps = tcfg.get("warmup_steps", 2000)
+    lr = tcfg["lr"]
+    min_lr = tcfg.get("min_lr", lr * 0.1)
+    decay_steps = tcfg.get("decay_steps", max(1, steps // 10))
+    stable_steps = max(1, steps - warmup_steps - decay_steps)
+
+    warmup = LinearLR(opt, start_factor=1 / warmup_steps, total_iters=warmup_steps)
+    stable = ConstantLR(opt, factor=1.0, total_iters=stable_steps)
+    decay = LinearLR(opt, start_factor=1.0, end_factor=min_lr / lr, total_iters=decay_steps)
+    return SequentialLR(
+        opt,
+        schedulers=[warmup, stable, decay],
+        milestones=[warmup_steps, warmup_steps + stable_steps],
+    )
 
 
 def save_checkpoint(
@@ -139,6 +153,7 @@ def main() -> None:
     parser.add_argument("--save-dir", default="checkpoints", help="where to write checkpoints")
     parser.add_argument("--save-interval", type=int, default=1000, help="save every N steps")
     parser.add_argument("--mask-ratio", type=float, default=None, help="fixed mask ratio (omit for U(0,1) sampling)")
+    parser.add_argument("--resume", default=None, help="path to a checkpoint (loads model+optimizer, restarts LR schedule)")
     args = parser.parse_args()
 
     if args.data and not args.vocab:
@@ -160,7 +175,14 @@ def main() -> None:
     opt = torch.optim.AdamW(
         model.parameters(), lr=tcfg["lr"], betas=(0.9, 0.95), weight_decay=0.1
     )  # LLaDA/GPT-3 recipe: beta2=0.95, wd=0.1
-    sched = build_scheduler(opt, tcfg)
+    start_step = 0
+    if args.resume:
+        ckpt = torch.load(args.resume, map_location=device)
+        model.load_state_dict(ckpt["model"])
+        opt.load_state_dict(ckpt["optimizer"])
+        start_step = int(ckpt.get("step", 0))
+        print(f"resumed from {args.resume} (was at step {start_step}); restarting LR schedule")
+    sched = build_scheduler(opt, tcfg)  # fresh WSD schedule — LR restarts high to escape the unigram minimum
     rng = random.Random(0)
 
     save_dir = Path(args.save_dir)
@@ -181,12 +203,12 @@ def main() -> None:
         sched.step()
         print(f"step {step}: loss {loss.item():.4f} lr {sched.get_last_lr()[0]:.2e}")
         if (step + 1) % args.save_interval == 0:
-            ckpt_path = save_dir / f"step_{step + 1}.pt"
-            save_checkpoint(ckpt_path, model, opt, sched, step + 1, cfg)
+            ckpt_path = save_dir / f"step_{start_step + step + 1}.pt"
+            save_checkpoint(ckpt_path, model, opt, sched, start_step + step + 1, cfg)
             print(f"saved {ckpt_path}")
 
     final_path = save_dir / "final.pt"
-    save_checkpoint(final_path, model, opt, sched, tcfg["steps"], cfg)
+    save_checkpoint(final_path, model, opt, sched, start_step + tcfg["steps"], cfg)
     print(f"saved {final_path}")
     print("train complete")
 

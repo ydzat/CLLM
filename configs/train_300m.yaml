@@ -13,6 +13,7 @@ data:
   # mask ratio sampled per batch ~ U(0,1) (LLaDA-style, decision 0009)
 training:
   steps: 100000      # ~3.3B tokens at batch 32 x seq 1024 (~55% of Chinchilla for 300M)
-  lr: 0.0003
-  min_lr: 0.00003    # cosine floor = 0.1 x lr
+  lr: 0.001          # higher LR so the stable phase can escape the unigram local minimum
+  min_lr: 0.0001     # WSD decay floor (NOT 0.1x — keep >=1e-4 to preserve the escape)
   warmup_steps: 2000
+  decay_steps: 10000 # WSD: decay only in the final 10% (stable phase = escape)
