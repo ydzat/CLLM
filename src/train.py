@@ -180,11 +180,12 @@ def main() -> None:
         ckpt = torch.load(args.resume, map_location=device)
         model.load_state_dict(ckpt["model"])
         opt.load_state_dict(ckpt["optimizer"])
-        # The checkpoint carries the optimizer's OLD (decayed) LR in param_groups;
-        # reset it to the config LR so the restarted WSD schedule actually starts
-        # from tcfg["lr"] instead of the stale low LR.
+        # The checkpoint carries the optimizer's OLD (decayed) LR; schedulers read
+        # param_group["initial_lr"], and load_state_dict restores it stale, so reset
+        # BOTH lr and initial_lr to the config LR before building the WSD schedule.
         for group in opt.param_groups:
             group["lr"] = tcfg["lr"]
+            group["initial_lr"] = tcfg["lr"]
         start_step = int(ckpt.get("step", 0))
         print(f"resumed from {args.resume} (was at step {start_step}); restarting LR schedule at lr={tcfg['lr']}")
     sched = build_scheduler(opt, tcfg)  # fresh WSD schedule — LR restarts high to escape the unigram minimum
