@@ -48,6 +48,7 @@ Thumbs.db
 
 # --- OpenCode runtime (never commit) ---
 .omo/
+.opencode/
 
 # --- Secrets (never commit) ---
 .hf_token
