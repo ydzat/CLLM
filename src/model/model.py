@@ -30,7 +30,14 @@ class BlockScanReader(nn.Module):
         self.position = SparsePosition(h // t, w // t, d)
         self.intra = nn.Parameter(torch.randn(t * t, d))  # (T², d) intra-block position, scale 1.0
         self.layers = nn.ModuleList(
-            BlockScanLayer(d, cfg["d_ff"], cfg["heads"], cfg["alpha"])
+            BlockScanLayer(
+                d,
+                cfg["d_ff"],
+                cfg["heads"],
+                cfg["alpha"],
+                block_ffn=cfg.get("block_ffn", False),
+                cross_read=cfg.get("cross_read", True),
+            )
             for _ in range(cfg["layers"])
         )
         self.slots = SlotAttention(d, t * t, cfg["vocab_size"])
