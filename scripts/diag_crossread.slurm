@@ -8,9 +8,11 @@
 #SBATCH --output=logs/diag_crossread_%j.out
 #SBATCH --error=logs/diag_crossread_%j.err
 
-# CPU-only (devel is free, ~1 min queue): compare cross_read OFF vs ON on real
-# Chinese. No GPU, no GPU quota. Proves whether the token -> all-block read
-# breaks the unigram plateau on real data.
+# CPU-only (devel is free, ~1 min queue): Oracle's decisive test. Repeat a SMALL
+# real-Chinese slice many times (each (context,next) seen hundreds of times) and
+# run OFF vs ON for a LONG trajectory, to separate "insufficient data" from
+# "context destroyed in the shared path". Also tracks min loss, so a transient
+# rise-then-fall (L. Fischer style) is visible rather than averaged away.
 set -euo pipefail
 
 module purge
@@ -28,7 +30,7 @@ apptainer exec \
     --vocab /data/bpe_tokenizer.json \
     --data Skywork/SkyPile-150B \
     --text-field text \
-    --steps 1200 \
+    --steps 6000 \
     --batch 4 \
     --seq 256 \
-    --tokens 200000
+    --tokens 50000

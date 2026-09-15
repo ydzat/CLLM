@@ -42,6 +42,7 @@ def run(cfg: dict, data: torch.Tensor, steps: int, batch: int, seq: int, seed: i
     k = max(1, round(seq * 0.15))
     early: list[float] = []
     late: list[float] = []
+    min_loss, min_step = float("inf"), 0
     for step in range(steps):
         starts = torch.randint(0, n - seq, (batch,))
         x = torch.stack([data[s : s + seq] for s in starts])
@@ -56,11 +57,14 @@ def run(cfg: dict, data: torch.Tensor, steps: int, batch: int, seq: int, seed: i
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         opt.step()
-        (early if step < 200 else late).append(loss.item())
+        v = loss.item()
+        (early if step < 200 else late).append(v)
+        if v < min_loss:
+            min_loss, min_step = v, step
         if step % 200 == 0:
-            print(f"  {label} step {step}: {loss.item():.4f}", flush=True)
+            print(f"  {label} step {step}: {v:.4f}", flush=True)
     e, l = sum(early) / len(early), sum(late) / len(late)
-    print(f"{label}: early {e:.4f} -> late {l:.4f}", flush=True)
+    print(f"{label}: early {e:.4f} -> late {l:.4f} | min {min_loss:.4f} @ step {min_step}", flush=True)
     return e, l
 
 
