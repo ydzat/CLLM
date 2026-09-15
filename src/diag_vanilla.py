@@ -1,26 +1,27 @@
-"""Controlled comparison: a VANILLA BERT-style transformer on the SAME data.
+"""Controlled comparison: a VANILLA transformer on the SAME repeated real corpus.
 
-Standard per-token position, full self-attention, FFN on every token, masked-LM
-training. If this learns real Chinese (loss < 6.6) while the block-scan reader
-stays at unigram, the bug is in the block-scan architecture. If this ALSO stays
-at unigram, the bug is in the data/training pipeline, not the architecture.
+Standard per-token position, full self-attention, FFN on every token, BPE token
+ids, masked-LM training — the same data slice, steps, batch and seed as
+``diag_crossread.py``. If this learns real Chinese (loss well below the unigram
+floor) while the block-scan reader stays at the unigram, the block design is the
+cause. If this ALSO plateaus, the cause is in the shared data/mask/loss path.
+Runs on the HPC ``devel`` partition (CPU, free); uses no GPU.
 """
 from __future__ import annotations
 
+import argparse
 import random
 import sys
 from pathlib import Path
 
 import torch
 import torch.nn.functional as F
-import yaml
 from torch import nn
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.data.corpus import iter_text_hf
-from src.data.dataloader import batchify
-from src.data.tokenizer import CharTokenizer
+from src.data.corpus import iter_bpe_ids
+from src.data.tokenizer import BpeTokenizer
 
 
 class Layer(nn.Module):
@@ -33,11 +34,12 @@ class Layer(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = x + self.attn(self.norm1(x), self.norm1(x), self.norm1(x))[0]
-        x = x + self.ffn(self.norm2(x))
-        return x
+        return x + self.ffn(self.norm2(x))
 
 
 class VanillaTransformer(nn.Module):
+    """Per-token position + full bidirectional attention + per-token FFN."""
+
     def __init__(self, vocab: int, d: int, layers: int, d_ff: int, heads: int, seq_len: int) -> None:
         super().__init__()
         self.embed = nn.Embedding(vocab, d)
@@ -50,56 +52,69 @@ class VanillaTransformer(nn.Module):
         n = x.shape[1]
         h = self.embed(x) + self.pos(torch.arange(n, device=x.device))
         for layer in self.layers:
-            h = h + layer(h)
+            h = layer(h)
         return self.head(self.norm(h))
 
 
-def mask_tokens(x: torch.Tensor, ratio: float, mask_id: int, rng: random.Random):
-    b, n = x.shape
-    xm = x.clone()
-    m = torch.zeros(b, n, dtype=torch.bool, device=x.device)
-    k = max(1, round(n * ratio))
-    for i in range(b):
-        idx = torch.tensor(rng.sample(range(n), k), device=x.device)
-        xm[i, idx] = mask_id
-        m[i, idx] = True
-    return xm, m
+def load_tokens(tok, dataset: str, text_field: str, n_tokens: int) -> torch.Tensor:
+    """Stream a bounded real-token buffer (same slice as the cross-read diagnostic)."""
+    buf: list[int] = []
+    for tid in iter_bpe_ids(tok, dataset, "train", text_field, max_chars=n_tokens * 4):
+        buf.append(tid)
+        if len(buf) >= n_tokens:
+            break
+    return torch.tensor(buf, dtype=torch.long)
 
 
 def main() -> None:
-    # Same params as configs/verify_med.yaml (d=128, L=2) for a fair comparison.
-    d, layers, d_ff, heads, seq_len, vocab, batch = 128, 2, 512, 8, 1024, 8000, 8
-    model = VanillaTransformer(vocab, d, layers, d_ff, heads, seq_len)
-    opt = torch.optim.AdamW(model.parameters(), lr=1e-3)
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--steps", type=int, default=6000)
+    ap.add_argument("--batch", type=int, default=4)
+    ap.add_argument("--seq", type=int, default=256)
+    ap.add_argument("--tokens", type=int, default=50_000)
+    ap.add_argument("--d", type=int, default=128)
+    ap.add_argument("--layers", type=int, default=2)
+    ap.add_argument("--vocab", default="/data/bpe_tokenizer.json")
+    ap.add_argument("--data", default="Skywork/SkyPile-150B")
+    ap.add_argument("--text-field", default="text")
+    args = ap.parse_args()
+
+    tok = BpeTokenizer.load(args.vocab)
+    print(f"streaming {args.tokens} real Chinese tokens...", flush=True)
+    data = load_tokens(tok, args.data, args.text_field, args.tokens)
+    print(f"loaded {data.numel()} tokens (vocab {tok.vocab_size})", flush=True)
+
+    torch.manual_seed(0)
     rng = random.Random(0)
-
-    tok = CharTokenizer.load("data/vocab.json") if Path("data/vocab.json").exists() else None
-    # Use the HPC vocab path if present.
-    import os
-
-    vocab_path = os.environ.get("VOCAB", "/data/vocab.json")
-    if not Path(vocab_path).exists():
-        vocab_path = "data/vocab.json"
-    tok = CharTokenizer.load(vocab_path)
-
-    def char_ids():
-        for ch in iter_text_hf("Skywork/SkyPile-150B", "train", "text", None):
-            yield tok.to_id(ch)
-
-    batches = batchify(char_ids(), batch, seq_len, tok.pad_id)
-
-    print(f"vanilla transformer d={d} L={layers} — unigram floor ~6.6")
-    for step, x in enumerate(batches):
-        if step >= 400:
-            break
-        xm, m = mask_tokens(x, 0.15, 1, rng)
-        logits = model(xm)
-        loss = F.cross_entropy(logits[m], x[m])
+    model = VanillaTransformer(tok.vocab_size, args.d, args.layers, args.d * 4, 4, args.seq)
+    opt = torch.optim.AdamW(model.parameters(), lr=1e-3, betas=(0.9, 0.95), weight_decay=0.1)
+    n = data.numel()
+    k = max(1, round(args.seq * 0.15))
+    early: list[float] = []
+    late: list[float] = []
+    min_loss, min_step = float("inf"), 0
+    for step in range(args.steps):
+        starts = torch.randint(0, n - args.seq, (args.batch,))
+        x = torch.stack([data[s : s + args.seq] for s in starts])
+        xm = x.clone()
+        mask = torch.zeros_like(x, dtype=torch.bool)
+        for i in range(args.batch):
+            pos = torch.tensor(rng.sample(range(args.seq), k))
+            xm[i, pos] = 1
+            mask[i, pos] = True
+        loss = F.cross_entropy(model(xm)[mask], x[mask])
         opt.zero_grad()
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         opt.step()
-        if step % 50 == 0:
-            print(f"step {step:3d}: loss {loss.item():.4f}")
+        v = loss.item()
+        (early if step < 200 else late).append(v)
+        if v < min_loss:
+            min_loss, min_step = v, step
+        if step % 200 == 0:
+            print(f"  vanilla step {step}: {v:.4f}", flush=True)
+    e, l = sum(early) / len(early), sum(late) / len(late)
+    print(f"vanilla: early {e:.4f} -> late {l:.4f} | min {min_loss:.4f} @ step {min_step}", flush=True)
 
 
 if __name__ == "__main__":
